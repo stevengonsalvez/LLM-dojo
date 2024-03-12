@@ -436,9 +436,9 @@
     "@iconify/types" "*"
 
 "@iconify-json/devicon@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@iconify-json/devicon/-/devicon-1.1.11.tgz#d6e8bd3a5b45e5be33a934c2472deceb2de3ee64"
-  integrity sha512-sANBgzknZFHm9aasT7h3KkGUkVVAPKbevoii1S59youS/UWTzFtiWU9Fxmz2nE3yBu4LI7yB4jynUd+fNSxnJg==
+  version "1.1.36"
+  resolved "https://registry.yarnpkg.com/@iconify-json/devicon/-/devicon-1.1.36.tgz#cd563d455bd9ce18d75734af61dad2ec25feed51"
+  integrity sha512-gtHyK5atlNwFDLJ+eKXiEV5cCOwdRBCoKaN2HgOoPbMEM8ove/mAgQ8KA1/AEWPgY4Zl8mZwMwmpalZvVKImfQ==
   dependencies:
     "@iconify/types" "*"
 
