@@ -478,9 +478,9 @@
     "@iconify/types" "*"
 
 "@iconify-json/uim@^1.1.5":
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/@iconify-json/uim/-/uim-1.1.5.tgz#eb402f2072490232ed5b9bfef7204c797d08b00d"
-  integrity sha512-AbdW0nc8LJw0L7m9hvUSxUJ1/MCE5MzU0BSlQZAqerXrZ8LeYYcMrIz185IaCB0swYCm1Eb+FNIY8A2P0o609A==
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@iconify-json/uim/-/uim-1.2.1.tgz#addc3c8cecb25b62399c5be8c0d673d529dd8e11"
+  integrity sha512-f+WsRsinY7Abi1L8LxtUDsFB6vg1DG0IFk9O0Y5QvEnLOYWYM2ZutSIQDRHdzUxmuD9bGQeGLj93iplXvq+jRQ==
   dependencies:
     "@iconify/types" "*"
 
