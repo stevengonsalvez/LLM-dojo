@@ -443,9 +443,9 @@
     "@iconify/types" "*"
 
 "@iconify-json/ic@^1.1.13":
-  version "1.1.13"
-  resolved "https://registry.yarnpkg.com/@iconify-json/ic/-/ic-1.1.13.tgz#f5405e6ec65c1ac5b85e2d1ea1adde9093b199bd"
-  integrity sha512-5i5zal/VRwTrs99iMTnG1Zu97bgX9Mkiu9TzR1U1rHBylUnBW+HkOweoQVEPgQITGG024/lNbZxU+3Aa2xuDww==
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@iconify-json/ic/-/ic-1.2.1.tgz#1a30a5132be0957cf6a8a6421282784654f0822f"
+  integrity sha512-UjL/bjJP/T5EV881+hTzcfTKVo0KEUjhnMiJcLtPzNgPtU2KZZmRx8BSKKR61H4CN/5FTEbyawGyG0aEt3SwGQ==
   dependencies:
     "@iconify/types" "*"
 
