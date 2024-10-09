@@ -457,9 +457,9 @@
     "@iconify/types" "*"
 
 "@iconify-json/logos@^1.1.33":
-  version "1.1.33"
-  resolved "https://registry.yarnpkg.com/@iconify-json/logos/-/logos-1.1.33.tgz#362c386c09aef04726abb3e7bf5c1a74880cf556"
-  integrity sha512-XHnob/dyib1oCaHZV0yRLXUfGQAr46pTuO/Y+jx9ImVBVb5jyZfJ+PLgro5pp8fyQkXWV2vq7pdR0yP5s4gcvg==
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@iconify-json/logos/-/logos-1.2.3.tgz#a2832f4150769d48d2569aaabd05edd4e9e9f932"
+  integrity sha512-JLHS5hgZP1b55EONAWNeqBUuriRfRNKWXK4cqYx0PpVaJfIIMiiMxFfvoQiX/bkE9XgkLhcKmDUqL3LXPdXPwQ==
   dependencies:
     "@iconify/types" "*"
 
