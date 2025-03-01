@@ -1,0 +1,6 @@
+navigate to bbc.co.uk
+wait 2 seconds
+hover over News tab
+click Sport link
+wait 1 second
+verify text "Sport" is present
