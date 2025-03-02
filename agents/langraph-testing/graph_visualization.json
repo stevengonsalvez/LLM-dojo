@@ -1,0 +1,44 @@
+{
+  "direct": {
+    "nodes": [
+      {
+        "id": "parse_test",
+        "label": "parse_test"
+      },
+      {
+        "id": "execute_step",
+        "label": "execute_step"
+      },
+      {
+        "id": "finalize",
+        "label": "finalize"
+      },
+      {
+        "id": "END",
+        "label": "END"
+      }
+    ],
+    "edges": []
+  },
+  "code_gen": {
+    "nodes": [
+      {
+        "id": "parse_test",
+        "label": "parse_test"
+      },
+      {
+        "id": "generate_code",
+        "label": "generate_code"
+      },
+      {
+        "id": "execute_code",
+        "label": "execute_code"
+      },
+      {
+        "id": "END",
+        "label": "END"
+      }
+    ],
+    "edges": []
+  }
+}

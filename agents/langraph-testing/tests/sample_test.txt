@@ -1,0 +1,6 @@
+1. Navigate to "https://example.com"
+2. Wait 2 seconds
+3. Verify that text "Example Domain" is present
+4. Click on "More information"
+5. Wait 2 seconds
+6. Verify that text "IANA" is present 

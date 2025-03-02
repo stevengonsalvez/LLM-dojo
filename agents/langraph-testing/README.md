@@ -1,218 +1,165 @@
-# Automated Testing Platform
+# Test Automation Platform
 
-An automated testing platform using LangGraph for end-to-end testing with natural language test cases.
-
-## Overview
-
-This project allows you to write test cases in simple natural language and executes them using browser automation. The system leverages LangGraph for workflow management and Browser-Use for web interactions.
+A flexible test automation platform that supports multiple execution paths for running browser-based tests.
 
 ## Features
 
-- Simple, natural language test case format
-- LangGraph-based workflow for test execution and fixing
-- Browser automation using Browser-Use
-- Memory of successful patterns with RAG
+- **Multiple Execution Modes**: 
+  - Direct execution using Browser-Use
+  - Code generation using Playwright MCP
 
-## Getting Started
+- **Flexible Configuration**:
+  - Configure via environment variables
+  - Specify execution mode, LLM provider, and other settings
 
-### Installation
+- **Modular Architecture**:
+  - Separate graph implementations
+  - Pluggable agent components
+  - Reusable prompts
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Copy the `.env.template` file to `.env` and configure your settings:
+   ```
+   cp .env.template .env
+   ```
+
+## Configuration
+
+### LLM Configuration
+
+Configure the LLM provider in the `.env` file:
+
+```
+LLM_PROVIDER=anthropic  # Options: anthropic, openai, azure
+LLM_MODEL=claude-3-sonnet-20240229
+LLM_TEMPERATURE=0.2
+LLM_MAX_TOKENS=4096
+
+# Add your API keys
+ANTHROPIC_API_KEY=your_api_key_here
+```
+
+### Graph Configuration
+
+Configure the execution mode and other settings:
+
+```
+EXECUTION_MODE=DIRECT  # Options: DIRECT, CODE_GEN
+PLAYWRIGHT_MCP_URL=http://localhost:3000  # Required for CODE_GEN mode
+ENABLE_RAG=false
+VERBOSE=false
+MAX_RETRIES=3
+```
+
+## Usage
+
+### Running Tests
+
+Run a test file using the command line:
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-
-# Navigate to the project directory
-cd langraph-testing
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.template .env
-# Edit .env file with your API keys
+python -m src.run tests/example_test.txt
 ```
 
-### Usage
-
-1. Create a test file:
-
-```
-# example.test
-navigate to bbc.co.uk
-hover over news tab
-click sports link
-verify text "Sport" is present
-```
-
-2. Run the test:
+Or using the main entry point:
 
 ```bash
-python main.py run --test-file examples/bbc_test.txt --verbose
+python main.py tests/example_test.txt
 ```
 
-3. Parse a test without running:
+### Visualizing Graph Structure
 
-```bash
-python main.py parse --test-file examples/bbc_test.txt
-```
-
-## LangGraph Workflow
-
-### Understanding the Graph
-
-The project uses LangGraph to manage the test execution workflow. The graph consists of the following nodes:
-
-- **parse_test**: Parses the test file into executable steps
-- **execute_step**: Executes the current step and updates results
-- **finalize**: Finalizes the test execution and cleans up resources
-
-### Visualizing the Graph
-
-To visualize the LangGraph workflow, add the following code to the end of `main.py`:
-
-```python
-def visualize_graph():
-    from src.agents.test_executor import build_langgraph_workflow
-    import os
-    
-    # Build the workflow
-    workflow = build_langgraph_workflow(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-    
-    # Export the graph to a file
-    workflow.export_to("langgraph_workflow.json")
-    
-    print("Graph exported to langgraph_workflow.json")
-    print("To visualize, visit https://langraph.ai/playground and upload the JSON file")
-
-if __name__ == "__main__":
-    # Choose whether to run the CLI or visualize the graph
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "visualize":
-        visualize_graph()
-    else:
-        from src.cli import main
-        main()
-```
-
-Then run:
+You can visualize the graph structure using the `visualize` command:
 
 ```bash
 python main.py visualize
 ```
 
-This will generate a JSON file that you can upload to [LangGraph Playground](https://langraph.ai/playground) for visualization.
+This will generate a JSON file containing the graph structure for both execution modes (direct and code generation). It also prints a text representation of the nodes and edges.
 
-### State Flow Through the Graph
+For a graphical visualization, you can use the generated JSON file with visualization tools like Graphviz, NetworkX with matplotlib, or online tools like Gephi.
 
-LangGraph manages a state object that flows through the nodes in the graph. The state structure is:
+Optional arguments:
+- `--output`: Specify the output file path (default: `graph_visualization.json`)
 
-```python
-class State:
-    test_file: str        # Path to the test file
-    steps: List[Dict]     # Parsed test steps
-    current_step: int     # Index of the current step being executed
-    results: List[Dict]   # Results of executed steps
-    is_complete: bool     # Whether execution is complete
+```bash
+python main.py visualize --output my_graph.json
 ```
 
-The state flow follows this pattern:
+### Command Line Options
 
-1. **Initial State**: Contains only the test file path
-   ```python
-   {"test_file": "examples/bbc_test.txt"}
-   ```
+- `--mode`: Execution mode (`direct` or `code_gen`)
+- `--mcp-url`: URL for Playwright MCP service (required for code_gen mode)
+- `--verbose`: Enable verbose output
 
-2. **After parse_test**: State now includes parsed steps
-   ```python
-   {
-     "test_file": "examples/bbc_test.txt",
-     "steps": [
-       {"action": "navigate", "url": "bbc.co.uk"},
-       {"action": "hover", "element": "news tab"},
-       ...
-     ],
-     "current_step": 0,
-     "results": []
-   }
-   ```
+Example:
 
-3. **After execute_step (first iteration)**: State updated with first result
-   ```python
-   {
-     "test_file": "examples/bbc_test.txt",
-     "steps": [...],
-     "current_step": 1,
-     "results": [{"action": "navigate", "success": true, ...}],
-     "is_complete": false
-   }
-   ```
-
-4. **After finalize**: State marked as complete
-   ```python
-   {
-     "test_file": "examples/bbc_test.txt",
-     "steps": [...],
-     "current_step": 4,
-     "results": [...],
-     "is_complete": true
-   }
-   ```
-
-### Conditional Logic
-
-The graph uses conditional edges to determine flow:
-
-```python
-workflow.add_conditional_edges(
-    "execute_step",
-    lambda state: "finalize" if state["is_complete"] else "execute_step"
-)
+```bash
+python -m src.run tests/example_test.txt --mode code_gen --mcp-url http://localhost:3000
 ```
 
-This allows the workflow to either execute another step or finalize based on the current state.
+### Creating Test Files
+
+Test files are text files containing step-by-step instructions. For example:
+
+```
+1. Navigate to "https://example.com"
+2. Click on the button with text "Login"
+3. Fill in the input with name "username" with "testuser"
+4. Fill in the input with name "password" with "password123"
+5. Click on the button with text "Submit"
+6. Verify that text "Welcome, testuser" is present
+```
 
 ## Project Structure
 
-- `src/`: Source code
-  - `agents/`: LangGraph agents for test execution
-  - `browser/`: Browser automation utilities
-  - `storage/`: Storage mechanisms for test results
-  - `parser.py`: Natural language test parser
-  - `cli.py`: Command-line interface
-- `examples/`: Example test cases
-- `tests/`: Unit tests
-- `main.py`: Entry point
-
-## Extending the Graph
-
-To add new nodes to the workflow (e.g., a fix agent), modify `src/agents/test_executor.py`:
-
-```python
-def build_langgraph_workflow(api_key=None):
-    # ... existing code ...
-    
-    # Add a fix agent node
-    async def fix_step(state):
-        """Try to fix a failed step."""
-        # Implement fix logic here
-        return {"fixed_step": True}
-    
-    workflow.add_node("fix_step", fix_step)
-    
-    # Update conditional edges
-    workflow.add_conditional_edges(
-        "execute_step",
-        lambda state: (
-            "finalize" if state["is_complete"] and state["success"] else
-            "fix_step" if not state["success"] else
-            "execute_step"
-        )
-    )
-    
-    # Connect fix_step back to execute_step
-    workflow.add_edge("fix_step", "execute_step")
-    
-    # ... rest of the function ...
+```
+├── src/
+│   ├── agents/
+│   │   ├── code_generator.py  # Playwright code generator
+│   │   └── test_executor.py   # Direct test executor
+│   ├── config/
+│   │   ├── graph_config.py    # Graph configuration
+│   │   └── __init__.py        # Config module init
+│   ├── graphs/
+│   │   ├── base_graph.py      # Base graph class
+│   │   ├── code_gen_graph.py  # Code generation graph
+│   │   ├── factory.py         # Graph factory
+│   │   ├── test_graph.py      # Direct test execution graph
+│   │   └── __init__.py        # Graphs module init
+│   ├── llm/
+│   │   └── ...                # LLM providers
+│   ├── prompts/
+│   │   ├── code_gen_prompts.py # Code generation prompts
+│   │   ├── test_prompts.py     # Test execution prompts
+│   │   └── __init__.py         # Prompts module init
+│   └── run.py                  # Main entry point
+├── tests/
+│   └── ...                     # Test files
+├── .env.template               # Environment variables template
+└── requirements.txt            # Dependencies
 ```
 
-This would add a fix agent that attempts to repair failed steps before continuing execution.
+## Extending the Platform
+
+### Adding a New Execution Mode
+
+1. Create a new graph implementation in `src/graphs/`
+2. Add the new mode to the `ExecutionMode` enum in `src/config/graph_config.py`
+3. Update the factory function in `src/graphs/factory.py`
+
+### Adding New Agent Capabilities
+
+1. Create or modify agent implementation in `src/agents/`
+2. Add new prompts in `src/prompts/` if needed
+3. Integrate with the appropriate graph implementation
+
+## License
+
+MIT

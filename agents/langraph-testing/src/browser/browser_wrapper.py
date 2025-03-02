@@ -4,48 +4,82 @@ Wrapper for Browser-Use library for browser automation.
 import asyncio
 from typing import Dict, Any, Optional
 import time
+import importlib.util
 
-# Import browser-use when available
-try:
-    from browser_use import BrowserUse
-except ImportError:
+# Check if browser-use is installed by checking for the module
+if importlib.util.find_spec("browser_use") is not None:
+    from browser_use import Browser
+    BROWSER_USE_AVAILABLE = True
+else:
     print("Warning: browser-use not installed. Using mock implementation.")
-    BrowserUse = None
+    Browser = None
+    BROWSER_USE_AVAILABLE = False
 
-from anthropic import Anthropic
+from ..llm import LLMConfig, LLMProvider
 
 class BrowserUseWrapper:
     """
     Wrapper for Browser-Use library with LLM translation of natural language to browser actions.
     """
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, llm_config: Optional[LLMConfig] = None):
         """
         Initialize the browser wrapper.
         
         Args:
-            api_key: Optional Anthropic API key
+            api_key: Optional API key (legacy, use llm_config instead)
+            llm_config: Optional LLM configuration
         """
-        self.client = Anthropic(api_key=api_key) if api_key else None
+        # Create LLM provider - either from provided config or from env variables
+        if llm_config:
+            self.llm_config = llm_config
+        elif api_key:
+            # Legacy support: create an Anthropic config from api_key
+            self.llm_config = LLMConfig(
+                provider="anthropic",
+                api_key=api_key,
+                model="claude-3-sonnet-20240229",
+                temperature=0.0
+            )
+        else:
+            # Try to load from environment
+            try:
+                self.llm_config = LLMConfig.from_env()
+            except ValueError:
+                self.llm_config = None
+                print("Warning: No LLM configuration provided and couldn't load from environment")
+        
+        # Initialize the LLM provider if we have a config
+        self.llm = LLMProvider.create(self.llm_config) if self.llm_config else None
         self.browser = None
         self.is_started = False
     
     async def start(self):
         """Start the browser."""
-        if BrowserUse and not self.is_started:
-            self.browser = BrowserUse()
-            await self.browser.start()
-            self.is_started = True
-        elif not BrowserUse:
+        if BROWSER_USE_AVAILABLE and not self.is_started:
+            try:
+                self.browser = Browser()
+                await self.browser.start()
+                self.is_started = True
+                print("Successfully started Browser-Use")
+            except Exception as e:
+                print(f"Error starting Browser-Use: {str(e)}")
+                print("Falling back to mock implementation")
+                self.is_started = True
+        elif not BROWSER_USE_AVAILABLE:
             print("Mock: Starting browser")
             self.is_started = True
     
     async def stop(self):
         """Stop the browser."""
-        if BrowserUse and self.is_started:
-            await self.browser.stop()
-            self.is_started = False
-        elif not BrowserUse and self.is_started:
+        if BROWSER_USE_AVAILABLE and self.is_started and self.browser:
+            try:
+                await self.browser.stop()
+            except Exception as e:
+                print(f"Error stopping Browser-Use: {str(e)}")
+            finally:
+                self.is_started = False
+        elif not BROWSER_USE_AVAILABLE and self.is_started:
             print("Mock: Stopping browser")
             self.is_started = False
     
@@ -75,7 +109,7 @@ class BrowserUseWrapper:
             return await method(step)
         
         # Otherwise, use LLM translation if available
-        if self.client:
+        if self.llm:
             return await self._execute_with_llm(step)
         
         # Fallback to mock implementation
@@ -91,8 +125,9 @@ class BrowserUseWrapper:
             url = f"https://{url}"
         
         try:
-            if BrowserUse:
+            if BROWSER_USE_AVAILABLE and self.browser:
                 await self.browser.navigate(url)
+                print(f"Navigated to {url}")
             else:
                 print(f"Mock: Navigating to {url}")
             
@@ -102,6 +137,7 @@ class BrowserUseWrapper:
                 "url": url
             }
         except Exception as e:
+            print(f"Error during navigation: {str(e)}")
             return {
                 "success": False,
                 "action": "navigate",
@@ -113,8 +149,9 @@ class BrowserUseWrapper:
         element = step.get("element", "")
         
         try:
-            if BrowserUse:
+            if BROWSER_USE_AVAILABLE and self.browser:
                 await self.browser.click(element)
+                print(f"Clicked on {element}")
             else:
                 print(f"Mock: Clicking on {element}")
             
@@ -124,6 +161,7 @@ class BrowserUseWrapper:
                 "element": element
             }
         except Exception as e:
+            print(f"Error during click: {str(e)}")
             return {
                 "success": False,
                 "action": "click",
@@ -135,8 +173,9 @@ class BrowserUseWrapper:
         element = step.get("element", "")
         
         try:
-            if BrowserUse:
+            if BROWSER_USE_AVAILABLE and self.browser:
                 await self.browser.hover(element)
+                print(f"Hovered over {element}")
             else:
                 print(f"Mock: Hovering over {element}")
             
@@ -146,6 +185,7 @@ class BrowserUseWrapper:
                 "element": element
             }
         except Exception as e:
+            print(f"Error during hover: {str(e)}")
             return {
                 "success": False,
                 "action": "hover",
@@ -158,6 +198,7 @@ class BrowserUseWrapper:
         
         try:
             if seconds > 0:
+                print(f"Waiting for {seconds} seconds")
                 time.sleep(seconds)
             
             return {
@@ -166,6 +207,7 @@ class BrowserUseWrapper:
                 "seconds": seconds
             }
         except Exception as e:
+            print(f"Error during wait: {str(e)}")
             return {
                 "success": False,
                 "action": "wait",
@@ -179,10 +221,11 @@ class BrowserUseWrapper:
         try:
             if verify_type == "text_present":
                 text = step.get("text", "")
-                if BrowserUse:
+                if BROWSER_USE_AVAILABLE and self.browser:
                     result = await self.browser.evaluate(f"""
                         document.body.innerText.includes("{text}")
                     """)
+                    print(f"Verified text '{text}' is present: {result}")
                 else:
                     print(f"Mock: Verifying text '{text}' is present")
                     result = True
@@ -195,10 +238,11 @@ class BrowserUseWrapper:
                 }
             elif verify_type == "element_visible":
                 element = step.get("element", "")
-                if BrowserUse:
+                if BROWSER_USE_AVAILABLE and self.browser:
                     result = await self.browser.evaluate(f"""
                         !!document.querySelector("{element}")
                     """)
+                    print(f"Verified element {element} is visible: {result}")
                 else:
                     print(f"Mock: Verifying element {element} is visible")
                     result = True
@@ -216,6 +260,7 @@ class BrowserUseWrapper:
                     "error": f"Unsupported verification type: {verify_type}"
                 }
         except Exception as e:
+            print(f"Error during verification: {str(e)}")
             return {
                 "success": False,
                 "action": "verify",
@@ -224,30 +269,24 @@ class BrowserUseWrapper:
     
     async def _execute_with_llm(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a step using LLM translation."""
-        if not self.client:
+        if not self.llm:
             return {
                 "success": False,
-                "error": "Anthropic client not initialized"
+                "error": "LLM provider not initialized"
             }
         
         try:
-            # Create prompt for Claude to generate Browser-Use code
+            # Create prompt for the LLM to generate Browser-Use code
             prompt = f"""
-            Generate Browser-Use code for this test step: {step}
+            Generate browser-use code for this test step using the Browser class: {step}
             
             Only return the code, no explanation. Use async/await syntax.
+            Example:
+            await browser.navigate("https://example.com")
             """
             
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20240229",
-                max_tokens=1000,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0
-            )
-            
-            code = response.content[0].text
+            # Use the LLM abstraction to generate code
+            code = await self.llm.generate(prompt)
             
             # Extract code block if present
             if "```" in code:
@@ -260,7 +299,7 @@ class BrowserUseWrapper:
             # Clean up the code
             code = code.strip()
             
-            if BrowserUse:
+            if BROWSER_USE_AVAILABLE and self.browser:
                 # Execute the generated code
                 local_vars = {"browser": self.browser}
                 exec_globals = {"__builtins__": __builtins__}
@@ -273,6 +312,7 @@ class BrowserUseWrapper:
                 async_func = f"async def _generated_func():\n    {code.replace('\n', '\n    ')}\n    return True"
                 exec(async_func, exec_globals, local_vars)
                 result = await local_vars["_generated_func"]()
+                print(f"Executed generated code successfully")
                 
                 return {
                     "success": result,
@@ -287,6 +327,7 @@ class BrowserUseWrapper:
                     "code": code
                 }
         except Exception as e:
+            print(f"Error during LLM execution: {str(e)}")
             return {
                 "success": False,
                 "action": step.get("action", "unknown"),
