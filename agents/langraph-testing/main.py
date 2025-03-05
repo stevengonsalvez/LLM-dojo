@@ -16,25 +16,19 @@ from dotenv import load_dotenv
 import networkx as nx
 
 
-def visualize_graph(output_file="graph_visualization.json"):
+def visualize_graph():
     """
-    Visualize the graph structure and save it to a JSON file.
-    
-    Args:
-        output_file: Output file path for the visualization data
+    Visualize the graph structure using LangGraph's built-in visualization.
     """
     print("Visualizing graph structure...")
     
     # Load environment variables
     load_dotenv()
     
-    # Create graph configuration from environment
-    config = GraphConfig.from_env()
-    
     # Create LLM configuration from environment
     llm_config = LLMConfig.from_env()
     
-    # Create both types of graphs for visualization
+    # Create graphs for visualization
     graphs = {
         "direct": create_graph(
             GraphConfig(execution_mode=ExecutionMode.DIRECT),
@@ -43,129 +37,94 @@ def visualize_graph(output_file="graph_visualization.json"):
         "code_gen": create_graph(
             GraphConfig(execution_mode=ExecutionMode.CODE_GEN),
             llm_config
+        ),
+        "unified": create_graph(
+            GraphConfig(),
+            llm_config,
+            use_unified=True
         )
     }
     
-    # Create a dictionary to store the visualization data
-    visualization_data = {}
+    # Create output directory if it doesn't exist
+    output_dir = "graph_visualizations"
+    os.makedirs(output_dir, exist_ok=True)
     
+    # Print graph structure for each graph using LangGraph's built-in visualization
     for name, graph_instance in graphs.items():
-        # Build the graph
-        workflow = graph_instance.get_graph()
+        print(f"\n{name.upper()} GRAPH:")
         
-        # Extract nodes and edges from the graph
-        graph_data = {
-            "nodes": [],
-            "edges": []
+        # Compile the graph first
+        compiled_graph = graph_instance.build_graph().compile()
+        
+        # Use LangGraph's built-in visualization
+        # This will generate a proper mermaid diagram with all nodes and edges
+        mermaid_str = compiled_graph.get_graph().draw_mermaid()
+        
+        # Print the mermaid diagram
+        print(mermaid_str)
+        
+        # Save the mermaid diagram to a file
+        output_file = os.path.join(output_dir, f"{name}_graph.mmd")
+        with open(output_file, "w") as f:
+            f.write(mermaid_str)
+        
+        print(f"Saved {name} graph to {output_file}")
+        
+        # Export to JSON for LangGraph Studio
+        json_output_file = os.path.join(output_dir, f"{name}_graph.json")
+        try:
+            # Export the graph to JSON
+            graph_json = compiled_graph.get_graph().to_json()
+            # Convert the dictionary to a JSON string
+            json_str = json.dumps(graph_json, indent=2)
+            with open(json_output_file, "w") as f:
+                f.write(json_str)
+            print(f"Exported {name} graph to {json_output_file} for LangGraph Studio")
+        except Exception as e:
+            print(f"Error exporting {name} graph to JSON: {str(e)}")
+    
+    # Create a specific langgraph.json file for LangGraph Studio
+    # Include all three graphs for a complete view
+    try:
+        # Compile all graphs
+        compiled_graphs = {}
+        for name, graph_instance in graphs.items():
+            compiled_graphs[name] = graph_instance.build_graph().compile()
+        
+        # Create the proper format for LangGraph Studio with all graphs
+        # LangGraph Studio expects a 'dependencies' list, not a 'graphs' dictionary
+        langgraph_config = {
+            "dependencies": [
+                {
+                    "id": "direct_graph",
+                    "type": "graph",
+                    "data": compiled_graphs["direct"].get_graph().to_json()
+                },
+                {
+                    "id": "code_gen_graph",
+                    "type": "graph",
+                    "data": compiled_graphs["code_gen"].get_graph().to_json()
+                },
+                {
+                    "id": "unified_graph",
+                    "type": "graph",
+                    "data": compiled_graphs["unified"].get_graph().to_json()
+                }
+            ]
         }
         
-        # Get nodes from the graph
-        for node_name in workflow.nodes:
-            graph_data["nodes"].append({
-                "id": node_name,
-                "label": node_name
-            })
+        json_str = json.dumps(langgraph_config, indent=2)
         
-        # Add END node if not already included
-        end_node_names = ["END", "__end__"]
-        if not any(node["id"] in end_node_names for node in graph_data["nodes"]):
-            graph_data["nodes"].append({
-                "id": "END",
-                "label": "END"
-            })
+        # Save to the root directory as langgraph.json
+        with open("langgraph.json", "w") as f:
+            f.write(json_str)
+        print("\nCreated langgraph.json with all graphs in the root directory for LangGraph Studio")
+    except Exception as e:
+        print(f"\nError creating langgraph.json: {str(e)}")
         
-        # Get edge information through introspection
-        # This is a simplified approach and might need adjustments based on langgraph version
-        
-        # Try to get _checkpointed_edges which holds edge information in some versions
-        if hasattr(workflow, "_checkpointed_edges"):
-            edges = workflow._checkpointed_edges
-            for edge in edges:
-                source, target = edge[0], edge[1]
-                graph_data["edges"].append({
-                    "source": source,
-                    "target": target
-                })
-        
-        # Try to get edge information from the graph definition
-        def extract_node_connections(workflow):
-            connections = []
-            
-            # Regular edges
-            if hasattr(workflow, "_graph"):
-                for node_name in workflow.nodes:
-                    if node_name == "END" or node_name == "__end__":
-                        continue
-                    
-                    # Check for direct node connections
-                    node_def = workflow._graph.get(node_name, {})
-                    if isinstance(node_def, dict) and "next" in node_def:
-                        next_nodes = node_def["next"]
-                        if isinstance(next_nodes, list):
-                            for next_node in next_nodes:
-                                connections.append((node_name, next_node))
-                        elif isinstance(next_nodes, str):
-                            connections.append((node_name, next_nodes))
-            
-            # Try to extract conditional edges
-            if hasattr(workflow, "_conditional_edges"):
-                for source, edge_info in workflow._conditional_edges.items():
-                    for target in edge_info.get("targets", []):
-                        connections.append((source, target))
-            
-            return connections
-        
-        edges = extract_node_connections(workflow)
-        for source, target in edges:
-            graph_data["edges"].append({
-                "source": source,
-                "target": target
-            })
-        
-        # For StateGraph: try to extract entry point connection
-        if hasattr(workflow, "entry_point"):
-            entry_point = workflow.entry_point
-            if entry_point:
-                graph_data["nodes"].insert(0, {
-                    "id": "START",
-                    "label": "START" 
-                })
-                graph_data["edges"].insert(0, {
-                    "source": "START",
-                    "target": entry_point
-                })
-        
-        # Add to visualization data
-        visualization_data[name] = graph_data
-    
-    # Save to file
-    with open(output_file, "w") as f:
-        json.dump(visualization_data, f, indent=2)
-    
-    print(f"Graph visualization data saved to {output_file}")
-    
-    # Print text representation
-    for name, graph_data in visualization_data.items():
-        print(f"\n{name.upper()} GRAPH:")
-        print("Nodes:")
-        for node in graph_data["nodes"]:
-            print(f"- {node['id']}")
-        
-        print("\nEdges:")
-        for edge in graph_data["edges"]:
-            print(f"- {edge['source']} → {edge['target']}")
-    
-    # Create a fallback simple representation if no edges were found
-    for name, graph_instance in graphs.items():
-        if not visualization_data[name]["edges"]:
-            print(f"\nFallback representation for {name.upper()} GRAPH:")
-            if name == "direct":
-                print("Nodes: parse_test → execute_step → finalize → END")
-            else:
-                print("Nodes: parse_test → generate_code → execute_code → END")
-    
-    print("\nTo visualize these graphs graphically, you can use network visualization tools")
-    print("or libraries like Graphviz, NetworkX with matplotlib, or online tools like Gephi.")
+    print(f"\nAll graph visualizations saved to {output_dir}/")
+    print("You can view the Mermaid files with any Mermaid viewer or at https://mermaid.live")
+    print("You can import the JSON files into LangGraph Studio for interactive visualization")
 
 
 if __name__ == "__main__":
@@ -174,13 +133,11 @@ if __name__ == "__main__":
     parser.add_argument("command", nargs="?", default="run", 
                         choices=["run", "visualize"],
                         help="Command to execute (run or visualize)")
-    parser.add_argument("--output", default="graph_visualization.json", 
-                        help="Output file for graph visualization (used with visualize command)")
     
     args, remaining = parser.parse_known_args()
     
     if args.command == "visualize":
-        visualize_graph(args.output)
+        visualize_graph()
     else:
         # For the "run" command, pass remaining args to the run module
         sys.argv = [sys.argv[0]] + remaining

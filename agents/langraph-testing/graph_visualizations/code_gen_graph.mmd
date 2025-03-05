@@ -1,0 +1,14 @@
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	parse_test(parse_test)
+	generate_code(generate_code)
+	execute_code(execute_code)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> parse_test;
+	execute_code --> __end__;
+	generate_code --> execute_code;
+	parse_test --> generate_code;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

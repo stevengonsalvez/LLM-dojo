@@ -1,0 +1,40 @@
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	parse_test(parse_test)
+	route_execution(route_execution)
+	execute_browser_step(execute_browser_step)
+	generate_code(generate_code)
+	execute_code(execute_code)
+	fix_code(fix_code)
+	finalize(finalize)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> parse_test;
+	finalize --> __end__;
+	fix_code --> execute_code;
+	generate_code --> execute_code;
+	parse_test --> route_execution;
+	route_execution -.-> parse_test;
+	route_execution -.-> execute_browser_step;
+	route_execution -.-> generate_code;
+	route_execution -.-> execute_code;
+	route_execution -.-> fix_code;
+	route_execution -.-> finalize;
+	route_execution -.-> __end__;
+	execute_browser_step -.-> parse_test;
+	execute_browser_step -.-> route_execution;
+	execute_browser_step -.-> generate_code;
+	execute_browser_step -.-> execute_code;
+	execute_browser_step -.-> fix_code;
+	execute_browser_step -.-> finalize;
+	execute_browser_step -.-> __end__;
+	execute_code -.-> parse_test;
+	execute_code -.-> route_execution;
+	execute_code -.-> execute_browser_step;
+	execute_code -.-> generate_code;
+	execute_code -.-> fix_code;
+	execute_code -.-> finalize;
+	execute_code -.-> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

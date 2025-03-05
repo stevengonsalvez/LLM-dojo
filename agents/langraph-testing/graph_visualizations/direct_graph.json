@@ -1,0 +1,82 @@
+{
+  "nodes": [
+    {
+      "id": "__start__",
+      "type": "schema",
+      "data": "__start__"
+    },
+    {
+      "id": "parse_test",
+      "type": "runnable",
+      "data": {
+        "id": [
+          "langgraph",
+          "utils",
+          "runnable",
+          "RunnableCallable"
+        ],
+        "name": "parse_test"
+      }
+    },
+    {
+      "id": "execute_step",
+      "type": "runnable",
+      "data": {
+        "id": [
+          "langgraph",
+          "utils",
+          "runnable",
+          "RunnableCallable"
+        ],
+        "name": "execute_step"
+      }
+    },
+    {
+      "id": "finalize",
+      "type": "runnable",
+      "data": {
+        "id": [
+          "langgraph",
+          "utils",
+          "runnable",
+          "RunnableCallable"
+        ],
+        "name": "finalize"
+      }
+    },
+    {
+      "id": "__end__",
+      "type": "schema",
+      "data": "__end__"
+    }
+  ],
+  "edges": [
+    {
+      "source": "__start__",
+      "target": "parse_test"
+    },
+    {
+      "source": "finalize",
+      "target": "__end__"
+    },
+    {
+      "source": "parse_test",
+      "target": "execute_step"
+    },
+    {
+      "source": "execute_step",
+      "target": "parse_test",
+      "conditional": true
+    },
+    {
+      "source": "execute_step",
+      "target": "finalize",
+      "conditional": true
+    },
+    {
+      "source": "execute_step",
+      "target": "__end__",
+      "conditional": true
+    }
+  ]
+}

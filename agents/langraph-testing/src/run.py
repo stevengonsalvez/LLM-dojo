@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 async def run_test(
     test_file: str,
     config: Optional[GraphConfig] = None,
-    llm_config: Optional[LLMConfig] = None
+    llm_config: Optional[LLMConfig] = None,
+    use_unified: bool = False
 ) -> Dict[str, Any]:
     """
     Run a test using the configured graph.
@@ -33,12 +34,13 @@ async def run_test(
         test_file: Path to the test file
         config: Optional graph configuration
         llm_config: Optional LLM configuration
+        use_unified: Whether to use the unified graph
         
     Returns:
         Test execution results
     """
     # Create the appropriate graph based on configuration
-    graph = create_graph(config, llm_config)
+    graph = create_graph(config, llm_config, use_unified=use_unified)
     
     # Run the test
     logger.info(f"Running test: {test_file}")
@@ -65,6 +67,11 @@ def parse_args():
         action="store_true", 
         help="Enable verbose output"
     )
+    parser.add_argument(
+        "--unified",
+        action="store_true",
+        help="Use the unified graph (composition-based) instead of inheritance-based graphs"
+    )
     return parser.parse_args()
 
 async def main():
@@ -89,7 +96,7 @@ async def main():
     
     try:
         # Run the test
-        result = await run_test(args.test_file, config, llm_config)
+        result = await run_test(args.test_file, config, llm_config, use_unified=args.unified)
         
         # Print the result summary
         print("\nTest Execution Summary:")
