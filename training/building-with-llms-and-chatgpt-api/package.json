@@ -13,7 +13,7 @@
     "@slidev/theme-seriph": "latest",
     "slidev-theme-academic": "^1.1.3",
     "slidev-theme-dracula": "^0.2.0",
-    "slidev-theme-penguin": "^1.7.1"
+    "slidev-theme-penguin": "^2.0.0"
   },
   "devDependencies": {
     "@iconify-json/devicon": "^1.1.11",
