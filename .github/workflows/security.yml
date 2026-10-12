@@ -13,7 +13,7 @@ jobs:
     name: gitleaks secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0          # full history scan
       - name: gitleaks (full-history scan)
@@ -29,7 +29,7 @@ jobs:
     env:
       GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0          # ggshield needs history for CI range scan
       - uses: actions/setup-python@v5
