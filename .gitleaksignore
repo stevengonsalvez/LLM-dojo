@@ -1,0 +1,9 @@
+# Historical gitleaks hits present when this gate was added (2026-10-12).
+# Reviewed as test fixtures and placeholders. A new leak is not in this list and fails CI.
+# Remove a line once its value is rotated or the file is gone. Do not add a line to hide a new leak.
+68455abac65cea51eea0e9e80b4d29f572bab00b:langchain/building/03-chains.ipynb:openai-api-key:533
+68455abac65cea51eea0e9e80b4d29f572bab00b:langchain/building/03-chains.ipynb:openai-api-key:534
+68455abac65cea51eea0e9e80b4d29f572bab00b:langchain/building/03-chains.ipynb:openai-api-key:535
+68455abac65cea51eea0e9e80b4d29f572bab00b:langchain/building/03-chains.ipynb:openai-api-key:536
+a32e36f373b28657a4e4616e5727b4ae1422dafa:misc/ReActInLangChain.ipynb:openai-api-key:398
+b76d0e58fbc280d513182e6bbdd97a9ec384a85d:gpt-api/HLW-1.ipynb:openai-api-key:52
